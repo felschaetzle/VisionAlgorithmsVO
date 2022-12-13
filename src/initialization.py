@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # print(sys.path)
 def initialization(K: np.array):
     img_0 = cv2.imread('../data/kitti/05/image_0/000000.png', cv2.IMREAD_GRAYSCALE)
-    img_1 = cv2.imread('../data/kitti/05/image_0/000010.png', cv2.IMREAD_GRAYSCALE)
+    img_1 = cv2.imread('../data/kitti/05/image_0/000005.png', cv2.IMREAD_GRAYSCALE)
     # img = cv2.imread('../data/kitti/05/image_0/000000.png')
 
     # img_0 = cv2.imread('../data/ex6_data/0001.jpg', cv2.IMREAD_GRAYSCALE)
@@ -31,43 +31,24 @@ def initialization(K: np.array):
                        qualityLevel = 0.2,
                        minDistance = 3,
                        blockSize = 5)
-    unfilter_features_0 = cv2.goodFeaturesToTrack(img_0, mask=None, **feature_params)
+    unfilter_key_points_0 = cv2.goodFeaturesToTrack(img_0, mask=None, **feature_params)
 
     # parameters = dict(winSize=(10, 10),
     # maxLevel=2,
     # criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
     # 10, 0.03))
 
-    filterd_features_1, st, err = cv2.calcOpticalFlowPyrLK(img_0, img_1, unfilter_features_0, None)
+    filterd_key_points_1, st, err = cv2.calcOpticalFlowPyrLK(img_0, img_1, unfilter_key_points_0, None)
 
-    filterd_features_1 = np.around(filterd_features_1)
+    # filterd_features_1 = np.around(filterd_features_1)
+    #
+    if filterd_key_points_1 is not None:
+        key_points_1 = filterd_key_points_1[st==1]
+        key_points_0 = unfilter_key_points_0[st==1]
 
-    if filterd_features_1 is not None:
-        key_points_1 = filterd_features_1[st==1]
-        key_points_0 = unfilter_features_0[st==1]
 
-    # key_points_0 = (key_points_0-K[0,2])*K[0,0]
-    # key_points_1 = (key_points_1-K[1,2])*K[1,1]
+    #key_points_0, key_points_1 = get_matches(img_0, img_1)
 
-    # print(img.shape)
-    # for elm in key_points_0:
-    #     cv2.circle(img, (int(elm[0]), int(elm[1])), 10, (0,255,0), -1)
-
-    # for elm in key_points_1:
-    #     cv2.circle(img, (int(elm[0]), int(elm[1])), 10, (255,0,0), -1)
-    # img = cv2.resize(img, (768, 512))
-    # cv2.imshow('img', img)
-    # cv2.imshow('img1', img_1)
-    # cv2.waitKey(0)
-
-    # key_points_0 = p1
-    # key_points_1 = p2
-
-    key_points_0, key_points_1 = get_matches(img_0, img_1)
-    
-    # print(key_points_0)
-    # print(key_points_1)
-    # print(key_points_0)
     normalized_key_points_0 = key_points_0.copy()
     normalized_key_points_1 = key_points_1.copy()
 
@@ -78,11 +59,9 @@ def initialization(K: np.array):
     normalized_key_points_1[:,1] = (key_points_1[:,1]-K[1,2])/K[1,1]
 
 
-    E = cv2.findEssentialMat(key_points_0, key_points_1, K, method=cv2.RANSAC, prob=0.0001, threshold=0.5)
+    E = cv2.findEssentialMat(key_points_0, key_points_1, K, method=cv2.RANSAC, prob=0.999, threshold=0.5)
 
     bitmask = E[1]
-    # for i, elm in enumerate(bitmask):
-    #     if elm:
 
     co0 = key_points_0
     co1 = key_points_1
@@ -94,42 +73,50 @@ def initialization(K: np.array):
             key_points_1.append(co1[i])
 
     key_points_0 = np.array(key_points_0)
-    key_points_1 = np.array(key_points_1)       
-    # key_points_0 = key_points_0[bitmask==1]
-    # key_points_1 = key_points_1[bitmask==1]
+    key_points_1 = np.array(key_points_1)
 
-    R1, R2, T = cv2.decomposeEssentialMat(E[0])
+    RT_candidates = cv2.decomposeEssentialMat(E[0])
     base = np.hstack((np.eye(3),np.zeros((3,1))))
 
-    r_candidate_1 = Rotation.from_matrix(R1).as_euler('zxz', degrees=True)
-    r_candidate_2 = Rotation.from_matrix(R2).as_euler('zxz', degrees=True)
-    summ_r_candidate_1 = np.sum(r_candidate_1)
-    summ_r_candidate_2 = np.sum(r_candidate_2)
+    # r_candidate_1 = Rotation.from_matrix(R1).as_euler('zxz', degrees=True)
+    # r_candidate_2 = Rotation.from_matrix(R2).as_euler('zxz', degrees=True)
+    # summ_r_candidate_1 = np.sum(r_candidate_1)
+    # summ_r_candidate_2 = np.sum(r_candidate_2)
 
-    # get R with minimal turning angle
-    if summ_r_candidate_1 > summ_r_candidate_2:
-        R = R2
-    else:
-        R = R1
-    # make sure z component of t is positive
-    if T[2] < 0:
-        T = -T
-
-    frameRT = np.hstack((R1,T))
-    # frameRT = np.hstack((R1, -T))
-
-    triangulated_landmarks = cv2.triangulatePoints(K@base, K@frameRT, key_points_0.T, key_points_1.T)
-    # triangulated_landmarks = linearTriangulation(key_points_0.T, key_points_1.T,K@base, K@frameRT)
-    triangulated_landmarks = triangulated_landmarks/triangulated_landmarks[3]
-    # print(triangulated_landmarks)
+    # # get R with minimal turning angle
+    # if summ_r_candidate_1 > summ_r_candidate_2:
+    #     R = R2
+    # else:
+    #     R = R1
+    # # make sure z component of t is positive
+    # # TODO: Buggy fix
+    # if T[2] < 0:
+    #     T = -T
+    infront_lens_points = 0
+    R = np.zeros((3,3))
+    T = np.zeros((3,1))
+    triangulated_landmarks = np.zeros((4,1))
+    for i in range(2):
+        print(i)
+        for j in range(-1,2,2):
+            print(j)
+            frameRT = np.hstack((RT_candidates[i],RT_candidates[2]*j))
+            # frameRT = np.hstack((R1, -T))
+            triangulated_landmarks_can = cv2.triangulatePoints(K@base, K@frameRT, key_points_0.T, key_points_1.T)
+            triangulated_landmarks_can = triangulated_landmarks_can/triangulated_landmarks_can[3]
+            p_front = np.sum(triangulated_landmarks_can[2,:]>0)
+            T_can = RT_candidates[2]*j
+            if p_front > infront_lens_points:
+                R = RT_candidates[i]
+                T = RT_candidates[2]*j
+                triangulated_landmarks = triangulated_landmarks_can
+                infront_lens_points = p_front
 
     pixel_coor = []
     for i in range(triangulated_landmarks.shape[1]):
         landmark = np.array([triangulated_landmarks[0,i], triangulated_landmarks[1,i], triangulated_landmarks[2,i]])
         prod = np.matmul(K,landmark)
         prod = prod/prod[2]
-        # prod[0] = (prod[0]/K[0,0]) + K[0,2]
-        # prod[1] = (prod[1]/K[0,0]) + K[1,2]
         prod = [(prod[0]/K[0,0]) + K[0,2], (prod[1]/K[0,0]) + K[1,2]]
         pixel_coor.append(prod)
     
@@ -156,7 +143,11 @@ def initialization(K: np.array):
     ax = fig.add_subplot(1, 3, 1, projection='3d')
 
     ax.scatter(triangulated_landmarks[0,:], triangulated_landmarks[1,:], triangulated_landmarks[2,:], marker = 'o')
-    ax.scatter([0,0,0],[0,0,0],[0,10,20],marker="x" )
+    ax.scatter([0,0],[0,0],[0,1],marker="x")
+    cam2 = np.array([[0],[0],[1]])
+    cam2 = R@cam2
+    print(R,T)
+    ax.scatter([T[0],T[0]+cam2[0]],[T[1],T[1]+cam2[1]],[T[2],T[0]+cam2[2]], marker="x")
     ax = fig.add_subplot(1,3,2)
     ax.imshow(img_0)
     ax.scatter(key_points_0[:,0], key_points_0[:,1], color = 'y', marker='s')
