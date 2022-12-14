@@ -193,9 +193,9 @@ def main():
                 transf, q1, q2, triangulatedPoints = vo.get_pose(q1, q2)
                 old_pose = cur_pose
                 cur_pose = np.matmul(cur_pose, np.linalg.inv(transf))
-                transfrom_mat = np.r_[old_pose, [np.array([0, 0, 0, 1])]]
+                transfrom_mat = np.r_[old_pose, [np.array([0, 0, 0, -0.87])]]
                 transfrom_mat_12 = cur_pose #np.r_[cur_pose, [np.array([0, 0, 0, 1])]]
-                # transfrom_mat_12[]
+                transfrom_mat_12[:,3] = np.array([-0.12062195, -0.23368521, 0.96480131])
                 print(cur_pose)
                 for i, row in enumerate(triangulatedPoints):
                     #point = np.array([cur_pose[0,3], cur_pose[1,3], cur_pose[2,3],  1]) + row
@@ -210,9 +210,14 @@ def main():
                     q_pres_2.append([q2[i,0], q2[i,1]])
                 q_pres_1 = np.array(q_pres_1)
                 q_pres_2 = np.array(q_pres_2)
-                back_pose = cv2.solvePnPRansac(triangulatedPoints[:,:3],q2,K, distCoeffs=None)
+                triangulatedPoints.astype('double')
+                q1.astype('double')
+                q2.astype('double')
+
+                # back_pose = cv2.solvePnPRansac(triangulatedPoints[:6,:3],q2[:6],K, distCoeffs=np.zeros((4,1)), flags=0)
+                back_pose = cv2.solvePnP(triangulatedPoints[:6,:3],q2[:6],K, distCoeffs=np.zeros((4,1)), flags=0)
                 R = back_pose[1].T
-                t = back_pose[2]
+                t = -back_pose[2]
                 # b_pose = np.hstack((R, t))
                 # b_pose_mat = np.r_[b_pose, [np.array([0, 0, 0, 1])]]
                 all_b_pose.append([t[0], t[1], t[2]])
@@ -250,9 +255,11 @@ def main():
     ax = fig.add_subplot(1, 3, 1, projection='3d')
     kk = np.array(all_path)
     ki = all_tri
-    # kb = np.array(all_b_pose)
+    kb = np.array(all_b_pose)
     ax.scatter(kk[:,0], kk[:,1], kk[:,2],marker='x')
     ax.scatter(ki[:,0], ki[:,1], ki[:,2],marker='o')
+    ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
+
     ax = fig.add_subplot(1,3,2)
     ax.imshow(vo.images[0])
     ax.scatter(q_pres_1[:,0], q_pres_1[:,1], color = 'y', marker='x')
