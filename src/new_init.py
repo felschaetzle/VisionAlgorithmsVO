@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import cv2
-
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -9,8 +8,8 @@ from tqdm import tqdm
 class VisualOdometry():
     def __init__(self, data_dir):
         self.K = self._load_calib(os.path.join(data_dir, 'calib.txt'))
-        # self.gt_poses = self._load_poses(os.path.join(data_dir,"poses.txt"))
-        self.images = self._load_images(data_dir)
+        self.gt_poses = self._load_poses(os.path.join(data_dir,"poses.txt"))
+        self.images = self._load_images(os.path.join(data_dir,"image_0"))
         self.orb = cv2.ORB_create(3000)
         FLANN_INDEX_LSH = 6
         index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
@@ -36,33 +35,28 @@ class VisualOdometry():
         K = np.array([[7.188560000000e+02, 0, 6.071928000000e+02],
                       [0, 7.188560000000e+02, 1.852157000000e+02],
                       [0, 0, 1]])
-
-        # K = np.array([  [1379.74,   0,          760.35],
-        #         [    0,     1382.08,    503.41],
-        #         [    0,     0,          1 ]] )
-
         base = np.hstack((np.eye(3), np.zeros((3, 1))))
         return K
 
-    # @staticmethod
-    # def _load_poses(filepath):
-    #     """
-    #     Loads the GT poses
-    #     Parameters
-    #     ----------
-    #     filepath (str): The file path to the poses file
-    #     Returns
-    #     -------
-    #     poses (ndarray): The GT poses
-    #     """
-    #     poses = []
-    #     with open(filepath, 'r') as f:
-    #         for line in f.readlines():
-    #             T = np.fromstring(line, dtype=np.float64, sep=' ')
-    #             T = T.reshape(3, 4)
-    #             T = np.vstack((T, [0, 0, 0, 1]))
-    #             poses.append(T)
-    #     return poses
+    @staticmethod
+    def _load_poses(filepath):
+        """
+        Loads the GT poses
+        Parameters
+        ----------
+        filepath (str): The file path to the poses file
+        Returns
+        -------
+        poses (ndarray): The GT poses
+        """
+        poses = []
+        with open(filepath, 'r') as f:
+            for line in f.readlines():
+                T = np.fromstring(line, dtype=np.float64, sep=' ')
+                T = T.reshape(3, 4)
+                T = np.vstack((T, [0, 0, 0, 1]))
+                poses.append(T)
+        return poses
 
     @staticmethod
     def _load_images(filepath):
@@ -136,12 +130,8 @@ class VisualOdometry():
         q1 = q1[q1[:,0] != 0]
         q2 = np.multiply(q2, E_mask)
         q2 = q2[q2[:,0] != 0]
-        pose = cv2.recoverPose(E,q1,q2,self.K,distanceThresh = 11)
+        pose = cv2.recoverPose(E,q1,q2,self.K,distanceThresh=50)
         # pose returns trans from 2 to 1 look at slides!!!
-        # Todo: Somt of  here
-        R = pose[1].T
-        t = R*pose[2]
-        # 21
         trans = np.hstack((pose[1],pose[2]))
         transfrom_mat = np.r_[trans, [np.array([0,0,0,1])]]
         # only retun used q
@@ -165,7 +155,7 @@ class VisualOdometry():
         return triangulated_landmarks[:3]
 
 def main():
-    data_dir = "../data/kitti/05/image_0"  # Try KITTI_sequence_2 too
+    data_dir = "../data/kitti/05/"  # Try KITTI_sequence_2 too
     vo = VisualOdometry(data_dir)
 
     #play_trip(vo.images)  # Comment out to not play the trip
@@ -176,17 +166,12 @@ def main():
     all_tri = []
     point_maske = []
     all_b_pose = []
-    q_pres_1 = []
-    q_pres_2 = []
-
     #for i, gt_pose in enumerate(tqdm(vo.gt_poses, unit="pose")):
     for i,images in enumerate(tqdm(vo.images, unit="images")):
         if i < 200:
             if i == 0:
                 base = np.hstack((np.eye(3), np.zeros((3, 1))))
-                base = np.r_[base, [np.array([0, 0, 0, 1])]]
                 cur_pose = base
-                cur_pose_back = base
 
             else:
                 K = np.array([[7.188560000000e+02, 0, 6.071928000000e+02],
@@ -196,93 +181,59 @@ def main():
                 transf, q1, q2, triangulatedPoints = vo.get_pose(q1, q2)
                 old_pose = cur_pose
                 cur_pose = np.matmul(cur_pose, np.linalg.inv(transf))
-                #transfrom_mat = np.r_[old_pose, [np.array([0, 0, 0, 1])]]
-                #transfrom_mat_12 = np.r_[cur_pose, [np.array([0, 0, 0, 1])]]
-                #transfrom_mat_12[:,3] = np.array([-0.12062195, -0.23368521, 0.96480131])
-                print(cur_pose)
+                transfrom_mat = np.r_[cur_pose, [np.array([0, 0, 0, 1])]]
                 for i, row in enumerate(triangulatedPoints):
                     #point = np.array([cur_pose[0,3], cur_pose[1,3], cur_pose[2,3],  1]) + row
-                    point = old_pose@row.T
+                    point = transfrom_mat@row.T
                     triangulatedPoints[i] = point.T
                 #triangulatedPoints = vo.triangulate(q1, q2, old_pose, transf)
 
-                for i in range(triangulatedPoints.shape[0]): #len(triangulatedPoints)
-                    # if abs(triangulatedPoints[i,0]) + abs(triangulatedPoints[i,1]) +abs(triangulatedPoints[i,2]) < 100:
-                    all_tri.append([triangulatedPoints[i,0],triangulatedPoints[i,1],triangulatedPoints[i,2]])
-                    q_pres_1.append([q1[i,0], q1[i,1]])
-                    q_pres_2.append([q2[i,0], q2[i,1]])
+                triangulatedPoints = triangulatedPoints[:,:3].astype('double')
+                q1 = q1.astype('double')
+                q2 = q2.astype('double')
 
-                triangulatedPoints = triangulatedPoints[:,:3].astype('float')
-                q1 = q1.astype('float')
-                q2 = q2.astype('float')
-
-                # back_pose = cv2.solvePnP(triangulatedPoints[:6,:3],q2[:6],K, distCoeffs=np.zeros((4,1)), flags=0)
-                #back_pose = cv2.solvePnP(triangulatedPoints[:6,:3],q2[:6],K, None)
+                # for i in range(5): #len(triangulatedPoints)
+                #     # if abs(triangulatedPoints[i,0]) + abs(triangulatedPoints[i,1]) +abs(triangulatedPoints[i,2]) < 100:
+                #     all_tri.append([triangulatedPoints[i,0],triangulatedPoints[i,1],triangulatedPoints[i,2]])
+                # #back_pose = cv2.solvePnPRansac(triangulatedPoints[:,:3],q2,K, distCoeffs=None)
+                # back_pose = cv2.solvePnP(triangulatedPoints[:6, :3], q2[:6], K, distCoeffs=np.zeros((4, 1)), flags=0)
+                # R = back_pose[1].T
+                # t = back_pose[2]
+                # # b_pose = np.hstack((R, t))
+                # # b_pose_mat = np.r_[b_pose, [np.array([0, 0, 0, 1])]]
+                # all_b_pose.append([t[0], t[1], t[2]])
                 if triangulatedPoints.shape[0] >= 4:
                     _, rvec, tvec, _ = cv2.solvePnPRansac(triangulatedPoints, q2, K, None)
                     R, _ = cv2.Rodrigues(rvec)
+
                     # R = -R.T
                     # t = R@tvec
                     t = tvec
                     b_pose = np.hstack((R, t))
                     transfrom_mat_back = np.r_[b_pose, [np.array([0, 0, 0, 1])]]
                     transfrom_mat_back = np.linalg.inv(transfrom_mat_back)
-                    #cur_pose_back = np.matmul(cur_pose, np.linalg.inv(transfrom_mat_back))
-                    if abs(transfrom_mat_back[0,3]) + abs(transfrom_mat_back[1,3]) + abs(transfrom_mat_back[2,3]) < 1000:
-                        all_b_pose.append([transfrom_mat_back[0,3], transfrom_mat_back[1,3], transfrom_mat_back[2,3]])
-                #gt_path.append((gt_pose[0, 3], gt_pose[2, 3]))
-                #estimated_path.append((cur_pose[0, 3], cur_pose[2, 3]))
+                    # cur_pose_back = np.matmul(cur_pose, np.linalg.inv(transfrom_mat_back))
+                    if abs(transfrom_mat_back[0, 3]) + abs(transfrom_mat_back[1, 3]) + abs(
+                            transfrom_mat_back[2, 3]) < 1000:
+                        all_b_pose.append(
+                            [transfrom_mat_back[0, 3], transfrom_mat_back[1, 3], transfrom_mat_back[2, 3]])
+                else:
+                    print("No")
+                # gt_path.append((gt_pose[0, 3], gt_pose[2, 3]))
+                # estimated_path.append((cur_pose[0, 3], cur_pose[2, 3]))
+            #gt_path.append((gt_pose[0, 3], gt_pose[2, 3]))
+            #estimated_path.append((cur_pose[0, 3], cur_pose[2, 3]))
             all_path.append([cur_pose[0, 3], cur_pose[1, 3], cur_pose[2, 3]])
-    all_tri = np.array(all_tri)
-    reprojected = []
-    for elm in all_tri:
-        #elm = np.append(elm, 1)
-        print(elm)
-        #su = vo.K@old_pose
-        prod = vo.K@elm
-        prod = prod/prod[2]
-        print(prod)
-        reprojected.append(prod[:2])
-    reprojected = np.array(reprojected)
-    # repojected = repojected/repojected[2,:]
-    print(reprojected)
 
     #plotting.visualize_paths(gt_path, estimated_path, "Visual Odometry", file_out=os.path.basename(data_dir) + ".html")
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 3, 1, projection='3d')
-    # kk = np.array(all_path)
-    # ki = np.array(all_tri)
-    # # kb = np.array(all_b_pose)
-    # ax.scatter(kk[:,0], kk[:,1], kk[:,2],marker='x')
-    # ax.scatter(ki[:,0], ki[:,1], ki[:,2],marker='o')
-    # # ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
-
-    # plt.show()
-
-
     fig = plt.figure()
     ax = fig.add_subplot(1, 3, 1, projection='3d')
     kk = np.array(all_path)
-    ki = all_tri
+    ki = np.array(all_tri)
     kb = np.array(all_b_pose)
     ax.scatter(kk[:,0], kk[:,1], kk[:,2],marker='x')
     #ax.scatter(ki[:,0], ki[:,1], ki[:,2],marker='o')
-    #ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
-
-    q_pres_1 = np.array(q_pres_1)
-    q_pres_2 = np.array(q_pres_2)
-    ax = fig.add_subplot(1,3,2)
-    ax.imshow(vo.images[0])
-    ax.scatter(q_pres_1[:,0], q_pres_1[:,1], color = 'y', marker='x')
-    ax.scatter(reprojected[:,0], reprojected[:,1], color = 'r', marker='x')
-
-    ax.set_title("Image 1")
-
-    ax = fig.add_subplot(1,3,3)
-    ax.imshow(vo.images[1])
-    ax.scatter(q_pres_2[:,0], q_pres_2[:,1], color = 'y', marker='x')
-    ax.scatter(reprojected[:,0], reprojected[:,1], color = 'r', marker='x')
-    ax.set_title("Image 2")
+    ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
 
     plt.show()
 
