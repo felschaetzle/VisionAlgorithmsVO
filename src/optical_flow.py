@@ -30,17 +30,17 @@ def initialization(K: np.array):
     p1, st, err = cv2.calcOpticalFlowPyrLK(img_0, img_1, p0, None, **lk_params)
 
     # Select good points
-    q1 = p1[st == 1]
+    q_last = p1[st == 1]
     q0 = p0[st == 1]
 
-    E, E_mask = cv2.findEssentialMat(q0, q1, K)
+    E, E_mask = cv2.findEssentialMat(q0, q_last, K)
 
 
     q0 = np.multiply(q0, E_mask)
     q0 = q0[q0[:,0] != 0]
-    q1 = np.multiply(q1, E_mask)
-    q1 = q1[q1[:,0] != 0]
-    pose = cv2.recoverPose(E,q0,q1, K,distanceThresh=100)
+    q_last = np.multiply(q_last, E_mask)
+    q_last = q_last[q_last[:,0] != 0]
+    pose = cv2.recoverPose(E,q0,q_last, K,distanceThresh=100)
 
 
     trans = np.hstack((pose[1],pose[2]))
@@ -50,8 +50,8 @@ def initialization(K: np.array):
     rec_mask[rec_mask == 255] = 1
     q0 = np.multiply(q0, rec_mask)
     q0 = q0[q0[:,0] != 0]
-    q1 = np.multiply(q1, rec_mask)
-    q1 = q1[q1[:,0] != 0]
+    q_last = np.multiply(q_last, rec_mask)
+    q_last = q_last[q_last[:,0] != 0]
     tri = pose[4]
     tri = tri/tri[3]
     tri = tri.T
@@ -119,7 +119,7 @@ def initialization(K: np.array):
 
     ax = fig.add_subplot(1,3,3)
     ax.imshow(img_1)
-    ax.scatter(q1[:,0], q1[:,1], color = 'y', marker='x')
+    ax.scatter(q_last[:,0], q_last[:,1], color = 'y', marker='x')
     ax.scatter(reprojected1[:,0], reprojected1[:,1], color = 'r', marker='x')
     ax.set_title("Image 2")
 
