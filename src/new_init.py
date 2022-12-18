@@ -1,10 +1,13 @@
 import os
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from plotting import Plotter
+
 def main():
-    data_dir = "../data/kitti/05/image_0/"  # Try KITTI_sequence_2 too
+    data_dir = "data/kitti/05/image_0/"  # Try KITTI_sequence_2 too
+    plot_live = False # enable for live plotting
     K = np.array([[7.188560000000e+02, 0, 6.071928000000e+02], [0, 7.188560000000e+02, 1.852157000000e+02], [0, 0, 1]])
     images = load_images(data_dir)
     orb = cv2.ORB_create(3000)
@@ -16,7 +19,9 @@ def main():
     all_path = []
     all_tri = []
     all_b_pose = []
-    images = images[:200]
+    images = images[:10]
+    plotter = Plotter()
+    line1 = []
     for i,_ in enumerate(tqdm(images, unit="images")):
         if i == 0:
             base = np.hstack((np.eye(3), np.zeros((3, 1))))
@@ -78,9 +83,9 @@ def main():
 
             cur_pose = np.matmul(cur_pose, np.linalg.inv(transf))
 
-            for i, row in enumerate(triangulatedPoints):
+            for r, row in enumerate(triangulatedPoints):
                 point = cur_pose@row.T
-                triangulatedPoints[i] = point.T
+                triangulatedPoints[r] = point.T
 
             triangulatedPoints = triangulatedPoints[:,:3].astype('double')
             q_last = q_last.astype('double')
@@ -98,20 +103,27 @@ def main():
                     all_b_pose.append([back_pose[0, 3], back_pose[1, 3], back_pose[2, 3]])
             else:
                 print("No")
+        
         all_path.append([cur_pose[0, 3], cur_pose[1, 3], cur_pose[2, 3]])
+        if plot_live:
+            kk = np.array(all_path)
+            line1 = plotter.live_plotter(i,images[i],kk[:,0], kk[:,1],line1)
 
 
     ## Plot that stuff
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 3, 1, projection='3d')
-    kk = np.array(all_path)
-    ki = np.array(all_tri)
-    kb = np.array(all_b_pose)
-    ax.scatter(kk[:,0], kk[:,1], kk[:,2],marker='x')
-    #ax.scatter(ki[:,0], ki[:,1], ki[:,2],marker='o')
-    ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
+    # fig = plt.figure()
+    # ax = fig.add_subplot(1, 3, 1, projection='3d')
+    if plot_live:
+        plt.ioff()
+        plt.show()
+    # kk = np.array(all_path)
+    # ki = np.array(all_tri)
+    # kb = np.array(all_b_pose)
+    # ax.scatter(kk[:,0], kk[:,1], kk[:,2],marker='x')
+    # #ax.scatter(ki[:,0], ki[:,1], ki[:,2],marker='o')
+    # ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
 
-    plt.show()
+    # plt.show()
 
 def load_images(filepath):
     image_paths = [os.path.join(filepath, file) for file in sorted(os.listdir(filepath))]
