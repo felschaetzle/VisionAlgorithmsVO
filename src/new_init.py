@@ -7,7 +7,7 @@ from plotting import Plotter
 
 def main():
     data_dir = "data/kitti/05/image_0/"  # Try KITTI_sequence_2 too
-    plot_live = False # enable for live plotting
+    plot_live = True # enable for live plotting
     K = np.array([[7.188560000000e+02, 0, 6.071928000000e+02], [0, 7.188560000000e+02, 1.852157000000e+02], [0, 0, 1]])
     images = load_images(data_dir)
     orb = cv2.ORB_create(3000)
@@ -19,7 +19,9 @@ def main():
     all_path = []
     all_tri = []
     all_b_pose = []
-    images = images[:10]
+    images = images[:20]
+    q_initial = []
+    q_current = []
     plotter = Plotter()
     line1 = []
     for i,_ in enumerate(tqdm(images, unit="images")):
@@ -55,6 +57,7 @@ def main():
             # Get the image points form the good matches
             q_last = np.float32([kp1[m.queryIdx].pt for m in good])
             q_current = np.float32([kp2[m.trainIdx].pt for m in good])
+            q_initial = q_current
 
             E, E_mask = cv2.findEssentialMat(q_last, q_current, K, prob=0.999, threshold=0.45)
             q_last = np.multiply(q_last, E_mask)
@@ -107,7 +110,7 @@ def main():
         all_path.append([cur_pose[0, 3], cur_pose[1, 3], cur_pose[2, 3]])
         if plot_live:
             kk = np.array(all_path)
-            line1 = plotter.live_plotter(i,images[i],kk[:,0], kk[:,1],line1)
+            line1 = plotter.live_plotter(i,images[i],q_initial,q_current,kk[:,0], kk[:,1],line1)
 
 
     ## Plot that stuff
