@@ -6,24 +6,26 @@ import matplotlib.pyplot as plt
 from plotting import Plotter
 
 def main():
-    data_dir = "data/kitti/05/image_0/"  # Try KITTI_sequence_2 too
-    plot_live = True # enable for live plotting
-    K = np.array([[7.188560000000e+02, 0, 6.071928000000e+02], [0, 7.188560000000e+02, 1.852157000000e+02], [0, 0, 1]])
-    images = load_images(data_dir)
-    orb = cv2.ORB_create(3000)
+    DATA_DIR = "data/kitti/05/image_0/"  # Try KITTI_sequence_2 too
+    NUMBER_OF_IMAGES_TO_USE = 200 # Maximum is 2761
     FLANN_INDEX_LSH = 6
+    PLOT_LIVE = True # enable for live plotting
+
+    K = np.array([[7.188560000000e+02, 0, 6.071928000000e+02], [0, 7.188560000000e+02, 1.852157000000e+02], [0, 0, 1]])
+    images = load_images(DATA_DIR)
+    orb = cv2.ORB_create(3000)
     index_params = dict(algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(indexParams=index_params, searchParams=search_params)
 
     all_path = []
-    all_tri = []
     all_b_pose = []
-    images = images[:20]
+    images = images[:NUMBER_OF_IMAGES_TO_USE]
     q_initial = []
     q_current = []
     plotter = Plotter()
     line1 = []
+
     for i,_ in enumerate(tqdm(images, unit="images")):
         if i == 0:
             base = np.hstack((np.eye(3), np.zeros((3, 1))))
@@ -33,13 +35,12 @@ def main():
         else:
             ### Get Matches ####
             # Find the keypoints and descriptors with ORB
-
             kp1, des1 = orb.detectAndCompute(images[i - 1], None)
             kp2, des2 = orb.detectAndCompute(images[i], None)
             # Find matches
             matches = flann.knnMatch(des1, des2, k=2)
 
-            # Find the matches there do not have a to high distance
+            # Find the matches that do not have distance which is too high
             good = []
             try:
                 for m, n in matches:
@@ -65,7 +66,7 @@ def main():
             q_current = np.multiply(q_current, E_mask)
             q_current = q_current[q_current[:, 0] != 0]
 
-            # pose returns trans from 2 to 1 look at slides!!!
+            # pose returns transform from 2 to 1 look at slides!!!
             pose = cv2.recoverPose(E, q_last, q_current, K, distanceThresh=50)
 
             transf = np.hstack((pose[1], pose[2]))
@@ -106,27 +107,16 @@ def main():
                     all_b_pose.append([back_pose[0, 3], back_pose[1, 3], back_pose[2, 3]])
             else:
                 print("No")
-        
+
         all_path.append([cur_pose[0, 3], cur_pose[1, 3], cur_pose[2, 3]])
-        if plot_live:
+        if PLOT_LIVE:
             kk = np.array(all_path)
             line1 = plotter.live_plotter(i,images[i],q_initial,q_current,kk[:,0], kk[:,1],line1)
 
-
     ## Plot that stuff
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 3, 1, projection='3d')
-    if plot_live:
+    if PLOT_LIVE:
         plt.ioff()
         plt.show()
-    # kk = np.array(all_path)
-    # ki = np.array(all_tri)
-    # kb = np.array(all_b_pose)
-    # ax.scatter(kk[:,0], kk[:,1], kk[:,2],marker='x')
-    # #ax.scatter(ki[:,0], ki[:,1], ki[:,2],marker='o')
-    # ax.scatter(kb[:, 0], kb[:, 1], kb[:, 2], marker='o')
-
-    # plt.show()
 
 def load_images(filepath):
     image_paths = [os.path.join(filepath, file) for file in sorted(os.listdir(filepath))]
@@ -134,8 +124,6 @@ def load_images(filepath):
 
 if __name__ == "__main__":
     main()
-
-
 
  # def triangulate(self, q_last, q_current, old_pose, curr_pose):
  #
