@@ -62,24 +62,28 @@ class Plotter:
         else:
             line1.set_data(q_current[:,0],q_current[:,1])
             if x_vec[-1]<self.xmin2 or x_vec[-1]>self.xmax2:
-                self.xmin2 = np.min(x_vec[-15:num+1])-np.std(x_vec[-15:num+1])
-                self.xmax2 = np.max(x_vec[-15:num+1])+np.std(x_vec[-15:num+1])
+                self.xmin2 = np.floor(np.min(x_vec[-15:num+1])-np.std(x_vec[-15:num+1]))
+                self.xmax2 = np.ceil(np.max(x_vec[-15:num+1])+np.std(x_vec[-15:num+1]))
                 self.plot2.set_xlim(self.xmin2,self.xmax2)
+                self.plot2.set_aspect('equal','datalim')
                 self.plot2.relim()
             if y_vec[-1]<self.ymin2 or y_vec[-1]>self.ymax2:
-                self.ymin2 = np.min(y_vec[-15:num+1])-np.std(y_vec[-15:num+1])
-                self.ymax2 = np.max(y_vec[-15:num+1])+np.std(y_vec[-15:num+1])
+                self.ymin2 = np.floor(np.min(y_vec[-15:num+1])-np.std(y_vec[-15:num+1]))
+                self.ymax2 = np.ceil(np.max(y_vec[-15:num+1])+np.std(y_vec[-15:num+1]))
                 self.plot2.set_ylim(self.ymin2,self.ymax2)
+                self.plot2.set_aspect('equal','datalim')
                 self.plot2.relim()
             if x_vec[-1]<self.xmin3 or x_vec[-1]>self.xmax3:
                 self.xmin3 = np.floor(np.min(x_vec)-np.std(x_vec))
                 self.xmax3 = np.ceil(np.max(x_vec)+np.std(x_vec))
                 self.plot3.set_xlim(self.xmin3,self.xmax3)
+                self.plot3.set_aspect('equal','datalim')
                 self.plot3.relim()
             if y_vec[-1]<self.ymin3 or y_vec[-1]>self.ymax3:
                 self.ymin3 = np.floor(np.min(y_vec)-np.std(y_vec))
                 self.ymax3 = np.ceil(np.max(y_vec)+np.std(y_vec))
                 self.plot3.set_ylim(self.ymin3,self.ymax3)
+                self.plot3.set_aspect('equal','datalim')
                 self.plot3.relim()
 
         self.ax.set_data(image)
