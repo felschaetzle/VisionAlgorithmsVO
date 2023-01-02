@@ -9,4 +9,4 @@ The pipeline has been tested using the KITTI dataset on Windows, macOS and Ubunt
 - Put the images from the KITTI dataset from **camera 0** in the `image_0` folder
 - Create and activate an **Anaconda** environment (we used python 3.9.14)
 - Install the dependencies from the `requirements.txt` file with `conda install --file requirements.txt`
-- Run `new_init.py` and witness greatness
+- Run `main.py` and witness greatness

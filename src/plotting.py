@@ -29,16 +29,16 @@ class Plotter:
         self.ymax4 = 0
         
 
-    def live_plotter(self,num,image,q_initial,q_current,x_vec,y_vec,line1,identifier='',pause_time=0.1):
+    def live_plotter(self, num,image, q_initial, q_current, x_vec, y_vec, line1,pause_time=0.1):
         if line1==[]:
-            # this is the call to matplotlib that allows dynamic plotting
+            # Call to matplotlib that allows dynamic plotting
             plt.ion()
             self.plot1 = plt.subplot2grid((2, 3), (0, 0), colspan=2)
             self.plot2 = plt.subplot2grid((2, 3), (0, 2), rowspan=2, colspan=2)
             self.plot3 = plt.subplot2grid((2, 3), (1, 1), rowspan=1)
             self.plot4 = plt.subplot2grid((2, 3), (1, 0), rowspan=1)
 
-            # create a variable for the line so we can later update it
+            # Create a variable for the line so we can later update it
             line1, = self.plot1.plot(q_current[:],q_current[:],'gx',alpha=0.8)
             self.ax = self.plot1.imshow(image,cmap="gray",vmin=0,vmax=255)
             self.line2, = self.plot2.plot(x_vec,y_vec,'-bo',alpha=0.8)      
@@ -46,14 +46,13 @@ class Plotter:
             self.line4, = self.plot4.plot(self.num_arr,self.q_i_arr,'-rx',alpha=0.8,label='candidates')
             self.line5, = self.plot4.plot(self.num_arr,self.q_c_arr,'-gx',alpha=0.8,label='keypoints')
 
-            #update plot label/title
+            # Update plot label/title
             self.plot1.grid(None)
             self.plot2.set_title('Zoomed in trajectory')
             self.plot3.set_title('Full trajectory')
             self.plot4.set_title('Keypoints and candidates in last frames')
             self.plot4.set_xlabel('frame number')
             self.plot4.legend()
-            # Packing all the plots and displaying them
             self.ymin4 = 0
             self.ymax4 = 0
 
@@ -100,8 +99,8 @@ class Plotter:
 
         self.plot4.relim()
 
-        # # this pauses the data so the figure/axis can catch up - the amount of pause can be altered above
+        # This pauses the data so the figure/axis can catch up - can not be 0
         plt.pause(pause_time)
 
-        # return line so we can update it again in the next iteration
+        # Return line so we can update it again in the next iteration
         return line1
