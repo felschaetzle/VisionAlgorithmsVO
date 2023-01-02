@@ -83,33 +83,41 @@ class VisualOdometryPiper:
                 triangulatedPoints = np.multiply(triangulatedPoints, rec_mask)
                 triangulatedPoints = triangulatedPoints[triangulatedPoints[:, 0] != 0]
 
-                cur_pose = np.matmul(cur_pose, np.linalg.inv(transf))
-
-                for r, row in enumerate(triangulatedPoints):
-                    point = cur_pose@row.T
-                    triangulatedPoints[r] = point.T
-
-                triangulatedPoints = triangulatedPoints[:,:3].astype('double')
-                q_last = q_last.astype('double')
-                self.q_current = self.q_current.astype('double')
-
-                if triangulatedPoints.shape[0] >= 4:
-                    _, rvec, tvec, _ = cv2.solvePnPRansac(triangulatedPoints, self.q_current, self.K, None)
-                    R, _ = cv2.Rodrigues(rvec)
-                    back_pose = np.hstack((R, tvec))
-                    back_pose = np.r_[back_pose, [np.array([0, 0, 0, 1])]]
-                    back_pose = np.linalg.inv(back_pose)
-
-                    # Filter out heavy outliers
-                    if abs(back_pose[0, 3]) + abs(back_pose[1, 3]) + abs(back_pose[2, 3]) < 1000:
-                        self.all_b_pose.append([back_pose[0, 3], back_pose[1, 3], back_pose[2, 3]])
+                if len(triangulatedPoints) > 7:
+                    cur_pose = np.matmul(cur_pose, np.linalg.inv(transf))
+                    # This part could be used for SLAM
+                    # for r, row in enumerate(triangulatedPoints):
+                    #     point = cur_pose@row.T
+                    #     triangulatedPoints[r] = point.T
+                    #
+                    # triangulatedPoints = triangulatedPoints[:,:3].astype('double')
+                    # q_last = q_last.astype('double')
+                    # self.q_current = self.q_current.astype('double')
+                    #
+                    # if triangulatedPoints.shape[0] >= 4:
+                    #     _, rvec, tvec, _ = cv2.solvePnPRansac(triangulatedPoints, self.q_current, self.K, None)
+                    #     R, _ = cv2.Rodrigues(rvec)
+                    #     back_pose = np.hstack((R, tvec))
+                    #     back_pose = np.r_[back_pose, [np.array([0, 0, 0, 1])]]
+                    #     back_pose = np.linalg.inv(back_pose)
+                    #
+                    #     # Filter out heavy outliers
+                    #     if abs(back_pose[0, 3]) + abs(back_pose[1, 3]) + abs(back_pose[2, 3]) < 1000:
+                    #         self.all_b_pose.append([back_pose[0, 3], back_pose[1, 3], back_pose[2, 3]])
+                    # else:
+                    #     print("No")
                 else:
-                    print("No")
+                    base = np.hstack((np.eye(3), np.zeros((3, 1))))
+                    base = np.r_[base, [np.array([0, 0, 0, 1])]]
+                    cur_pose = np.matmul(cur_pose, base)
+                    print("No move")
+
+
 
             self.all_path.append([cur_pose[0, 3], cur_pose[1, 3], cur_pose[2, 3]])
             if self.plot_live:
                 kk = np.array(self.all_path)
-                self.line1 = self.plotter.live_plotter(i,self.images[i],self.q_initial,self.q_current,kk[:,0], kk[:,1],self.line1)
+                self.line1 = self.plotter.live_plotter(i,self.images[i],self.q_initial,self.q_current,kk[:,0], kk[:,2],self.line1)
 
         ## Plot
         if self.plot_live:
