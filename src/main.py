@@ -6,8 +6,9 @@ def main():
     DATA_DIR = "data/kitti/05/image_0/"
     NUMBER_OF_IMAGES_TO_USE = 2761 # Maximum is 2761
     PLOT_LIVE = True # Enable for live plotting
+    COLLECT_DATA = False # Enable for collecting keypoints and candidates in file
 
-    piper = VisualOdometryPiper(K, DATA_DIR, NUMBER_OF_IMAGES_TO_USE, PLOT_LIVE)
+    piper = VisualOdometryPiper(K, DATA_DIR, NUMBER_OF_IMAGES_TO_USE, PLOT_LIVE, COLLECT_DATA)
     piper.visualize()
 
 if __name__ == "__main__":

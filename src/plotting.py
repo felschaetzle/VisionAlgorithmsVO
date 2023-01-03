@@ -12,8 +12,8 @@ class Plotter:
         self.plot3 = plt.subplot2grid((2, 3), (1, 1), rowspan=1)
         self.plot4 = plt.subplot2grid((2, 3), (1, 0), rowspan=1)
         self.num_arr = np.zeros(20)
-        self.q_i_arr = np.zeros(20)
-        self.q_c_arr = np.zeros(20)
+        self.number_of_candidates = np.zeros(20)
+        self.number_of_keypoints = np.zeros(20)
         self.line2 = []
         self.line3 = []
         self.line4 = []
@@ -29,7 +29,7 @@ class Plotter:
         self.ymax4 = 0
         
 
-    def live_plotter(self, num,image, q_initial, q_current, x_vec, y_vec, line1,pause_time=0.1):
+    def live_plotter(self, num, image, candidate_keypoints, keypoints, x_vec, y_vec, line1, pause_time=0.1):
         if line1==[]:
             # Call to matplotlib that allows dynamic plotting
             plt.ion()
@@ -39,12 +39,12 @@ class Plotter:
             self.plot4 = plt.subplot2grid((2, 3), (1, 0), rowspan=1)
 
             # Create a variable for the line so we can later update it
-            line1, = self.plot1.plot(q_current[:],q_current[:],'gx',alpha=0.8)
-            self.ax = self.plot1.imshow(image,cmap="gray",vmin=0,vmax=255)
-            self.line2, = self.plot2.plot(x_vec,y_vec,'-bo',alpha=0.8)      
-            self.line3, = self.plot3.plot(x_vec,y_vec,'-bo',alpha=0.8,markersize=1)
-            self.line4, = self.plot4.plot(self.num_arr,self.q_i_arr,'-rx',alpha=0.8,label='candidates')
-            self.line5, = self.plot4.plot(self.num_arr,self.q_c_arr,'-gx',alpha=0.8,label='keypoints')
+            line1, = self.plot1.plot(keypoints[:], keypoints[:], 'gx', alpha=0.8)
+            self.ax = self.plot1.imshow(image, cmap="gray", vmin=0, vmax=255)
+            self.line2, = self.plot2.plot(x_vec, y_vec,'-bo', alpha=0.8)      
+            self.line3, = self.plot3.plot(x_vec, y_vec,'-bo', alpha=0.8, markersize=1)
+            self.line4, = self.plot4.plot(self.num_arr, self.number_of_candidates, '-rx', alpha=0.8, label='candidates')
+            self.line5, = self.plot4.plot(self.num_arr, self.number_of_keypoints, '-gx', alpha=0.8, label='keypoints')
 
             # Update plot label/title
             self.plot1.grid(None)
@@ -60,7 +60,7 @@ class Plotter:
             plt.show()
             
         else:
-            line1.set_data(q_current[:,0],q_current[:,1])
+            line1.set_data(keypoints[:,0], keypoints[:,1])
             if x_vec[-1]<self.xmin2 or x_vec[-1]>self.xmax2:
                 self.xmin2 = np.floor(np.min(x_vec[-15:num+1])-np.std(x_vec[-15:num+1]))
                 self.xmax2 = np.ceil(np.max(x_vec[-15:num+1])+np.std(x_vec[-15:num+1]))
@@ -88,18 +88,18 @@ class Plotter:
 
         self.ax.set_data(image)
         self.plot1.set_title('Current frame ({}) with keypoints'.format(num+1))
-        self.line2.set_data(x_vec[-25:num+1],y_vec[-25:num+1])
-        self.line3.set_data(x_vec,y_vec)
-        self.num_arr = np.append(self.num_arr[1:],num+1)
-        self.q_i_arr = np.append(self.q_i_arr[1:],len(q_initial))
-        self.q_c_arr = np.append(self.q_c_arr[1:],len(q_current))
-        self.line4.set_data(self.num_arr,self.q_i_arr)
-        self.line5.set_data(self.num_arr,self.q_c_arr)
+        self.line2.set_data(x_vec[-25:num+1], y_vec[-25:num+1])
+        self.line3.set_data(x_vec, y_vec)
+        self.num_arr = np.append(self.num_arr[1:], num+1)
+        self.number_of_candidates = np.append(self.number_of_candidates[1:], len(candidate_keypoints))
+        self.number_of_keypoints = np.append(self.number_of_keypoints[1:], len(keypoints))
+        self.line4.set_data(self.num_arr, self.number_of_candidates)
+        self.line5.set_data(self.num_arr, self.number_of_keypoints)
         self.plot4.set_xlim(num-20,num+1)
-        if self.q_c_arr[-1]<self.ymin4 or self.q_i_arr[-1]>self.ymax4:
-                self.ymin4 = np.floor(np.min(self.q_c_arr))
-                self.ymax4 = np.ceil(np.max(self.q_i_arr))
-                self.plot4.set_ylim(self.ymin4,self.ymax4)
+        if self.number_of_keypoints[-1]<self.ymin4 or self.number_of_candidates[-1]>self.ymax4:
+                self.ymin4 = np.floor(np.min(self.number_of_keypoints))
+                self.ymax4 = np.ceil(np.max(self.number_of_candidates))
+                self.plot4.set_ylim(self.ymin4, self.ymax4)
 
         self.plot4.relim()
 
