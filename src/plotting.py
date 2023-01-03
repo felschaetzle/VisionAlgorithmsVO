@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 class Plotter:
@@ -52,9 +53,9 @@ class Plotter:
             self.plot3.set_title('Full trajectory')
             self.plot4.set_title('Keypoints and candidates in last frames')
             self.plot4.set_xlabel('frame number')
+            ax4 = self.plot4.figure.gca()
+            ax4.xaxis.set_major_locator(MaxNLocator(integer=True))
             self.plot4.legend()
-            self.ymin4 = 0
-            self.ymax4 = 0
 
             plt.tight_layout()
             plt.show()
@@ -95,9 +96,8 @@ class Plotter:
         self.number_of_keypoints = np.append(self.number_of_keypoints[1:], len(keypoints))
         self.line4.set_data(self.num_arr, self.number_of_candidates)
         self.line5.set_data(self.num_arr, self.number_of_keypoints)
-        self.plot4.set_xlim(num-20,num+1)
-        if self.number_of_keypoints[-1]<self.ymin4 or self.number_of_candidates[-1]>self.ymax4:
-                self.ymin4 = np.floor(np.min(self.number_of_keypoints))
+        self.plot4.set_xlim(num-18,num+2)
+        if self.number_of_candidates[-1]>self.ymax4:
                 self.ymax4 = np.ceil(np.max(self.number_of_candidates))
                 self.plot4.set_ylim(self.ymin4, self.ymax4)
 

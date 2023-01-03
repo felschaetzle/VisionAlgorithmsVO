@@ -46,7 +46,7 @@ class VisualOdometryPiper:
                 if i == 0:
                     first_pose = np.hstack((np.eye(3), np.zeros((3, 1))))
                     current_pose = np.r_[first_pose, [np.array([0, 0, 0, 1])]]
-        
+                    
                 else:
                     ### Get Matches ####
                     # Find the keypoints and descriptors with ORB
@@ -96,8 +96,9 @@ class VisualOdometryPiper:
                     if len(triangulated_points) > self.keypoints_threshhold:
                         current_pose = np.matmul(current_pose, np.linalg.inv(transform_matrix))
                         if(not found_enough_keypoints):
-                            print("Found more than " + self.keypoints_threshhold + " keypoints again. Continuing movement.")
+                            print("Found more than " + str(self.keypoints_threshhold) + " keypoints again. Continuing movement.")
                             found_enough_keypoints = True
+
                         # This part could be used for SLAM
                         #self.__slam(triangulated_points, current_pose)
 
