@@ -46,10 +46,11 @@ class Plotter:
             self.line3, = self.plot3.plot(x_vec, y_vec,'-bo', alpha=0.8, markersize=1)
             self.line4, = self.plot4.plot(self.num_arr, self.number_of_candidates, '-rx', alpha=0.8, label='candidates')
             self.line5, = self.plot4.plot(self.num_arr, self.number_of_keypoints, '-gx', alpha=0.8, label='keypoints')
-
             # Update plot label/title
             self.plot1.grid(None)
+            self.plot1.axis('off')
             self.plot2.set_title('Zoomed in trajectory')
+            self.plot2.axis('equal')
             self.plot3.set_title('Full trajectory')
             self.plot3.axis('equal')
             self.plot4.set_title('Keypoints and candidates in last frames')
@@ -57,7 +58,7 @@ class Plotter:
             # Set the xticks (frames) to integer values for the candidates and keypoints
             ax4 = self.plot4.figure.gca()
             ax4.xaxis.set_major_locator(MaxNLocator(integer=True))
-            self.plot4.legend()
+            self.plot4.legend(loc='lower left')
 
             plt.tight_layout()
             plt.show()
@@ -69,26 +70,24 @@ class Plotter:
                 self.xmin2 = np.floor(np.min(x_vec[-15:num+1])-np.std(x_vec[-15:num+1]))
                 self.xmax2 = np.ceil(np.max(x_vec[-15:num+1])+np.std(x_vec[-15:num+1]))
                 self.plot2.set_xlim(self.xmin2,self.xmax2)
-                self.plot2.set_aspect('equal','datalim')
                 self.plot2.relim()
             if y_vec[-1] < self.ymin2 or y_vec[-1] > self.ymax2:
                 self.ymin2 = np.floor(np.min(y_vec[-15:num+1])-np.std(y_vec[-15:num+1]))
                 self.ymax2 = np.ceil(np.max(y_vec[-15:num+1])+np.std(y_vec[-15:num+1]))
                 self.plot2.set_ylim(self.ymin2,self.ymax2)
-                self.plot2.set_aspect('equal','datalim')
                 self.plot2.relim()
             # Sets the limits for the full trajectory
             if x_vec[-1]/self.buffer < self.xmin3 or x_vec[-1]*self.buffer > self.xmax3:
-                self.xmin3 = np.floor(np.min(x_vec)-np.std(x_vec))
-                self.xmax3 = np.ceil(np.max(x_vec)+np.std(x_vec))
+                self.xmin3 = np.floor(np.min(x_vec)-np.std(x_vec)/2)
+                self.xmax3 = np.ceil(np.max(x_vec)+np.std(x_vec)/3)
                 self.plot3.set_xlim(self.xmin3,self.xmax3)
                 self.ymin3 = self.xmin3
                 self.ymax3 = self.xmax3
                 self.plot3.set_ylim(self.ymin3,self.ymax3)
                 self.plot3.relim()
             if y_vec[-1]/self.buffer < self.ymin3 or y_vec[-1]*self.buffer > self.ymax3:
-                self.ymin3 = np.floor(np.min(y_vec)-np.std(y_vec))
-                self.ymax3 = np.ceil(np.max(y_vec)+np.std(y_vec))
+                self.ymin3 = np.floor(np.min(y_vec)-np.std(y_vec)/2)
+                self.ymax3 = np.ceil(np.max(y_vec)+np.std(y_vec)/3)
                 self.plot3.set_ylim(self.ymin3,self.ymax3)
                 self.xmin3 = self.ymin3
                 self.xmax3 = self.ymax3
@@ -113,9 +112,14 @@ class Plotter:
         self.line5.set_data(self.num_arr, self.number_of_keypoints)
         self.line4.set_data(self.num_arr, self.number_of_candidates)
         self.plot4.set_xlim(num-18,num+2)
-        if self.number_of_candidates[-1]>self.ymax4:
-                self.ymax4 = np.ceil(np.max(self.number_of_candidates))
-                self.plot4.set_ylim(self.ymin4, self.ymax4)
+        # Increase maximum of ylim
+        if self.number_of_candidates[-1]*self.buffer > self.ymax4:
+            self.ymax4 = np.ceil(self.buffer*np.max(self.number_of_candidates))
+            self.plot4.set_ylim(self.ymin4, self.ymax4)
+        # Reduce maximum of ylim
+        elif np.average(self.number_of_candidates[-10]) < 0.7*self.ymax4:
+            self.ymax4 = np.ceil(self.buffer*np.max(self.number_of_candidates))
+            self.plot4.set_ylim(self.ymin4, self.ymax4)
         self.plot4.relim()
 
         # This pauses the data so the figure/axis can catch up - can not be 0

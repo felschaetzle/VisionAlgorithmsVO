@@ -14,10 +14,10 @@ class VisualOdometryPiper:
         self.FLANN_INDEX_LSH = 6
         self.plot_live = plot_live
         self.collect_data = collect_data
-        self.keypoints_threshhold = 20
+        self.keypoints_threshold = 20
         self.images = self.__load_images(data_dir)
         self.images = self.images[:number_of_images]
-        self.orb = cv2.ORB_create(3000)
+        self.orb = cv2.ORB_create(2500)
         self.index_params = dict(algorithm=self.FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
         self.search_params = dict(checks=50)
         self.flann = cv2.FlannBasedMatcher(indexParams=self.index_params, searchParams=self.search_params)
@@ -93,10 +93,10 @@ class VisualOdometryPiper:
                     triangulated_points = triangulated_points[triangulated_points[:, 0] != 0]
                     
                     # If more good landmarks than a certain threshhold have been triangulated, calculate new pose
-                    if len(triangulated_points) > self.keypoints_threshhold:
+                    if len(triangulated_points) > self.keypoints_threshold:
                         current_pose = np.matmul(current_pose, np.linalg.inv(transform_matrix))
                         if(not found_enough_keypoints):
-                            print("Found more than " + str(self.keypoints_threshhold) + " keypoints again. Continuing movement.")
+                            print("Found more than " + str(self.keypoints_threshold) + " keypoints again. Continuing movement.")
                             found_enough_keypoints = True
 
                         # This part could be used for SLAM
@@ -107,10 +107,6 @@ class VisualOdometryPiper:
                         print("Not enough triangulated points. Assuming no movement.")
                         found_enough_keypoints = False
 
-                # If true the keypoints and candidates get stored in a new file
-                if self.collect_data:
-                    file.write(str(len(self.q_initial)) + ', ' + str(len(self.q_current)) + '\n')
-
                 self.all_path.append([current_pose[0, 3], current_pose[1, 3], current_pose[2, 3]])
 
                 # If set to true the plotter visualizes the progress
@@ -118,6 +114,12 @@ class VisualOdometryPiper:
                     updated_path = np.array(self.all_path)
                     self.line1 = self.plotter.live_plotter(i, self.images[i], self.q_initial, self.q_current, updated_path[:,0], updated_path[:,2], self.line1)
 
+                # If true the keypoints and candidates get stored in a new file
+                if self.collect_data:
+                    file.write(str(len(self.q_initial)) + ', ' + str(len(self.q_current)) + '\n')
+                    # updated_path = np.array(self.all_path)
+                    # file.write(str(updated_path[-1,0]) + ', ' + str(updated_path[-1,2]) + '\n')
+                
         ## Plot
         if self.plot_live:
             plt.ioff()
