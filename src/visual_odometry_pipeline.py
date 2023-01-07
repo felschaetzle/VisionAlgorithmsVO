@@ -9,15 +9,14 @@ from contextlib import nullcontext
 
 class VisualOdometryPiper:
 
-    def __init__(self, K, data_dir, number_of_images, plot_live, collect_data):
+    def __init__(self, K, data_dir, plot_live, collect_data, max_orb_features):
         self.K = K
         self.FLANN_INDEX_LSH = 6
         self.plot_live = plot_live
         self.collect_data = collect_data
         self.keypoints_threshold = 20
         self.images = self.__load_images(data_dir)
-        self.images = self.images[:number_of_images]
-        self.orb = cv2.ORB_create(2500)
+        self.orb = cv2.ORB_create(max_orb_features)
         self.index_params = dict(algorithm=self.FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1)
         self.search_params = dict(checks=50)
         self.flann = cv2.FlannBasedMatcher(indexParams=self.index_params, searchParams=self.search_params)
@@ -35,7 +34,7 @@ class VisualOdometryPiper:
     def visualize(self):
         found_enough_keypoints = True
         now = datetime.now()
-        filename = "data_" + now.strftime("%d_%m_%Y_%H:%M:%S")
+        filename = "data_" + now.strftime("%d_%m_%Y_%H:%M:%S") + ".txt"
 
         with open(filename, 'a+') if(self.collect_data) else nullcontext() as file:
             if self.collect_data:
@@ -116,9 +115,9 @@ class VisualOdometryPiper:
 
                 # If true the keypoints and candidates get stored in a new file
                 if self.collect_data:
-                    file.write(str(len(self.q_initial)) + ', ' + str(len(self.q_current)) + '\n')
-                    # updated_path = np.array(self.all_path)
-                    # file.write(str(updated_path[-1,0]) + ', ' + str(updated_path[-1,2]) + '\n')
+                    # file.write(str(len(self.q_initial)) + ', ' + str(len(self.q_current)) + '\n')
+                    updated_path = np.array(self.all_path)
+                    file.write(str(updated_path[-1,0]) + ', ' + str(updated_path[-1,2]) + '\n')
                 
         ## Plot
         if self.plot_live:

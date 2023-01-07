@@ -13,11 +13,17 @@ The pipeline has been tested using the KITTI dataset on Windows, macOS and Ubunt
 
 - Run `main.py` and witness greatness.
 
-## Screencast
-The screencast is uploaded to YouTube and can be found under [this link](https://youtu.be/LzPxz6JBkss).
+## Screencasts
+The screencasts are uploaded to YouTube
+- [KITTI](https://youtu.be/LzPxz6JBkss)
+- [Parking](https://youtu.be/Y9UnjBag4RE)
+- [Malaga](https://youtu.be/ejYT5tZ5rbc)
 
 ## Malaga and parking data sets
 - Create new folder under data
-- Change the directory variable accordingly
-- Make sure you delete the K.txt file out of the images folder from the parking data set
-- Make sure you only use either the left or the right image in the malaga data set e.g. using `mv *_right.jpg RightCamera/` in a bash shell
+
+- Change the directory variable in the `main.py` file accordingly
+
+- Make sure you delete the *K.txt* file out of the images folder from the parking data set
+
+- Make sure you only use either the left or the right image in the malaga data set e.g. using `mv *_right.jpg RightCamera/`
